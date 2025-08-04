@@ -3,10 +3,15 @@ const Customer = require('../models/Customer');
 const Company = require('../models/Company');
 
 
-const generateQuotationId = async () => {
-  const count = await Quotation.countDocuments();
-  return `Q${10000 + count + 1}`;
-}
+// const generateQuotationId = async () => {
+//   const count = await Quotation.countDocuments();
+//   return `Q${10000 + count + 1}`;
+// }
+
+const generateQuotationId = (prefix = 'Q-', length = 5) => {
+  const randomNumber = Math.floor(Math.random() * Math.pow(10, length));
+  return prefix + String(randomNumber).padStart(length, '0');
+};
 
 const calculateItemTotal = (item, enableTax) => {
   const subtotal = item.quantity * item.unitCost;
@@ -50,26 +55,6 @@ exports.getQuotation = async (req, res) => {
   }
 };
 
-// @desc    Create quotation
-// @route   POST /api/quotations
-// @access  Public
-// exports.createQuotation = async (req, res) => {
-//   try {
-//     // Generate quotation ID (you might want to use a more sophisticated method)
-//     const count = await Quotation.countDocuments();
-//     const quotationId = `Q${10000 + count + 1}`;
-//     console.log(req.body)
-//     const quotation = new Quotation({
-//       quotationId,
-//       ...req.body
-//     });
-
-//     const savedQuotation = await quotation.save();
-//     res.status(201).json(savedQuotation);
-//   } catch (err) {
-//     res.status(400).json({ message: err.message });
-//   }
-// };
 
 
 exports.createQuotation = async (req, res) => {
