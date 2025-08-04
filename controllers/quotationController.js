@@ -65,7 +65,7 @@ exports.createQuotation = async (req, res) => {
       return res.status(400).json({ message: 'Company not found' });
     }
     
-    console.log(req.body)
+    // console.log(req.body)
 
     const customer = await Customer.findById(req.body.billedTo);
     if (!customer) {
@@ -81,7 +81,7 @@ exports.createQuotation = async (req, res) => {
     const quotation = new Quotation({
       quotationId,
       ...req.body,
-      items: itemsWithTotals
+      // items: itemsWithTotals
     });
 
     const savedQuotation = await quotation.save();
