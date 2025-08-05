@@ -72,16 +72,10 @@ exports.createQuotation = async (req, res) => {
       return res.status(400).json({ message: 'Customer not found' });
     }
 
-    const itemsWithTotals = req.body.items.map(item => ({
-      ...item,
-      total: calculateItemTotal(item, req.body.enableTax)
-    }));
-
     const quotationId = await generateQuotationId();
     const quotation = new Quotation({
       quotationId,
-      ...req.body,
-      // items: itemsWithTotals
+      ...req.body
     });
 
     const savedQuotation = await quotation.save();
