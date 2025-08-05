@@ -24,6 +24,8 @@ app.use(morgan('dev'));
 app.use('/api/quotations', require('./routes/quotationRoutes'));
 app.use('/api/customers', require('./routes/customerRoutes'));
 app.use('/api/companies', require('./routes/companyRoutes'));
+app.use('/api/services', require('./routes/service'));
+app.use('/api/quotation', require('./routes/Quotation'));
 
 // Error handling middleware
 app.use(require('./middlewares/errorHandler'));

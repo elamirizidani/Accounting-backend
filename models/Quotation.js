@@ -1,7 +1,11 @@
 const mongoose = require('mongoose');
 
 const itemSchema = new mongoose.Schema({
-  service: { type: String, required: true },
+  service: { 
+    type:  mongoose.Schema.Types.ObjectId, 
+    ref:'Service',
+    required: true
+   },
   description: { type: String },
   quantity: { type: Number, required: true, default: 1 },
   unitCost: { type: Number, required: true },
