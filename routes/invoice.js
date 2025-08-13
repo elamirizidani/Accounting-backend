@@ -15,14 +15,9 @@ router.post('/',async (req,res)=>{
       status = 'approved',
       paymentTerms,
       totalAmount,
-      paymentMethod,
+      paymentMethod='',
       notes,
-      billedTo,
-      billedBy,
-      items,
-      taxRate,
-      discount,
-      invoiceStatus= 'unpaid'
+      invoiceStatus = 'unpaid'
          } = req.body;
 let quotationData;
 
@@ -107,7 +102,8 @@ router.get('/', async (req, res) => {
         path: 'quotation',
         populate: [
           { path: 'billedTo' },
-          { path: 'billedBy' }
+          { path: 'billedBy' },
+          { path: 'items.service' },
         ]
       });
     const statusCounts = await Invoice.aggregate([
