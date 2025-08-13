@@ -47,6 +47,7 @@ const quotationSchema = new mongoose.Schema({
   roundOffTotal: { type: Boolean, default: true },
   signatureName: { type: String },
   signatureImage: { type: String },
+  totalAmount:{type: String},
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });

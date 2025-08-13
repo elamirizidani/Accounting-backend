@@ -3,18 +3,21 @@ const router = express.Router();
 const Quotation = require('../models/Quotation');
 const mongoose = require('mongoose');
 
-// Create a new quotation
 
-const generateQuotationId = (prefix = 'Q-', length = 5) => {
-  const randomNumber = Math.floor(Math.random() * Math.pow(10, length));
-  return prefix + String(randomNumber).padStart(length, '0');
+const generateQuotationId = async (prefix = 'P-', length = 2) => {
+  const count = await Quotation.countDocuments();
+  const currentYear = new Date().getFullYear();
+  const lastTwoDigits = currentYear.toString().slice(-2);
+  const sequenceNumber = count === 0 ? 14 : count + 1;
+  return prefix + sequenceNumber + `/${lastTwoDigits}`;
 };
+
 
 router.post('/', async (req, res) => {
   try {
-    // Generate a unique quotation ID (you might want to customize this)
     const count = await Quotation.countDocuments();
-    req.body.quotationId = generateQuotationId();
+    req.body.quotationId = await generateQuotationId();
+    // console.log(req.body)
     const quotation = new Quotation(req.body);
     await quotation.save();
     res.status(201).send(quotation);

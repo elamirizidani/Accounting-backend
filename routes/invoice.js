@@ -5,52 +5,85 @@ const Invoice = require('../models/Invoice');
 const Quotation = require('../models/Quotation');
 
 
+
 router.post('/',async (req,res)=>{
     try {
-        const { quotationId } = req.params;
-    
-    // Get the quotation
-    const quotation = await Quotation.findById(quotationId)
-      .populate('billedTo')
-      .populate('billedBy');
-    
-    if (!quotation) {
-      return res.status(404).json({ message: 'Quotation not found' });
+        const { 
+          quotation,
+          invoiceDate,
+      dueDate,
+      status = 'approved',
+      paymentTerms,
+      totalAmount,
+      paymentMethod,
+      notes,
+      billedTo,
+      billedBy,
+      items,
+      taxRate,
+      discount,
+      invoiceStatus= 'unpaid'
+         } = req.body;
+let quotationData;
+
+
+if (quotation) {
+      // Case 1: Using existing quotation
+      quotationData = await Quotation.findById(quotation)
+        .populate('billedTo')
+        .populate('billedBy');
+      if (!quotationData) {
+        return res.status(404).json({ message: 'Quotation not found' });
+      }
+      
+      if (quotationData.status !== 'approved') {
+        return res.status(400).json({ 
+          message: 'Only approved quotations can be converted to invoices' 
+        });
+      }
     }
-    
-    // Validate quotation status
-    if (quotation.status !== 'approved') {
-      return res.status(400).json({ 
-        message: 'Only approved quotations can be converted to invoices' 
-      });
+    else {
+      try {
+        req.body.quotationId = await generateQuotationId();
+        const newQuotation = new Quotation(req.body);
+        quotationData = await newQuotation.save();
+        
+        // Populate the references
+        quotationData = await Quotation.findById(quotationData._id)
+          .populate('billedTo')
+          .populate('billedBy');
+
+      } catch (quotationError) {
+        return res.status(400).json({ 
+          message: 'Failed to create quotation',
+          error: quotationError.message 
+        });
+      }
     }
-    
-    // Generate invoice number
+
+
     const invoiceCount = await Invoice.countDocuments();
     const invoiceNumber = `INV-${(invoiceCount + 1).toString().padStart(4, '0')}`;
-    
-    // Calculate due date (30 days from now by default)
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 30);
-    
-    // Create invoice
+
+
     const invoice = new Invoice({
       invoiceNumber,
-      quotation: quotation._id,
-      invoiceDate: new Date(),
-      dueDate,
-      status: 'sent',
-      paymentTerms: 'Net 30'
+      quotation: quotationData._id,
+      invoiceDate: invoiceDate || new Date(), // Default to current date if not provided
+      dueDate: dueDate || calculateDueDate(invoiceDate), // Add your due date calculation logic
+      status:invoiceStatus,
+      paymentTerms: paymentTerms || 'Due on receipt', // Default payment terms
+      totalAmount: totalAmount || quotationData.totalAmount, // Use quotation total if not provided
+      paymentMethod,
+      notes,
     });
     
     await invoice.save();
+    quotationData.convertedToInvoice = true;
+    quotationData.invoice = invoice._id;
+    await quotationData.save();
     
-    // Update quotation to mark as converted
-    quotation.convertedToInvoice = true;
-    quotation.invoice = invoice._id;
-    await quotation.save();
-    
-    // Populate the response with quotation data
+    // Return populated invoice
     const populatedInvoice = await Invoice.findById(invoice._id)
       .populate({
         path: 'quotation',
@@ -67,65 +100,58 @@ router.post('/',async (req,res)=>{
 })
 
 
-// exports.createInvoice = async (req, res) => {
-//   try {
-//     const { quotationId } = req.params;
-    
-//     // Get the quotation
-//     const quotation = await Quotation.findById(quotationId)
-//       .populate('billedTo')
-//       .populate('billedBy');
-    
-//     if (!quotation) {
-//       return res.status(404).json({ message: 'Quotation not found' });
-//     }
-    
-//     // Validate quotation status
-//     if (quotation.status !== 'approved') {
-//       return res.status(400).json({ 
-//         message: 'Only approved quotations can be converted to invoices' 
-//       });
-//     }
-    
-//     // Generate invoice number
-//     const invoiceCount = await Invoice.countDocuments();
-//     const invoiceNumber = `INV-${(invoiceCount + 1).toString().padStart(4, '0')}`;
-    
-//     // Calculate due date (30 days from now by default)
-//     const dueDate = new Date();
-//     dueDate.setDate(dueDate.getDate() + 30);
-    
-//     // Create invoice
-//     const invoice = new Invoice({
-//       invoiceNumber,
-//       quotation: quotation._id,
-//       invoiceDate: new Date(),
-//       dueDate,
-//       status: 'sent',
-//       paymentTerms: 'Net 30'
-//     });
-    
-//     await invoice.save();
-    
-//     // Update quotation to mark as converted
-//     quotation.convertedToInvoice = true;
-//     quotation.invoice = invoice._id;
-//     await quotation.save();
-    
-//     // Populate the response with quotation data
-//     const populatedInvoice = await Invoice.findById(invoice._id)
-//       .populate({
-//         path: 'quotation',
-//         populate: [
-//           { path: 'billedTo' },
-//           { path: 'billedBy' }
-//         ]
-//       });
-    
-//     res.status(201).json(populatedInvoice);
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// };
+router.get('/', async (req, res) => {
+  try {
+    const invoices = await Invoice.find().sort({ createdAt: -1 })
+      .populate({
+        path: 'quotation',
+        populate: [
+          { path: 'billedTo' },
+          { path: 'billedBy' }
+        ]
+      });
+    const statusCounts = await Invoice.aggregate([
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          status: "$_id",
+          count: 1,
+          _id: 0
+        }
+      }
+    ]);
+
+    const counts = {};
+    statusCounts.forEach(item => {
+      counts[item.status] = item.count;
+    });
+
+    res.status(200).json({
+      invoices,
+      statusCounts: counts
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+function calculateDueDate(invoiceDate) {
+  const date = invoiceDate ? new Date(invoiceDate) : new Date();
+  date.setDate(date.getDate() + 30); // 30 days by default
+  return date;
+}
+const generateQuotationId = async (prefix = 'P-', length = 2) => {
+  const count = await Quotation.countDocuments();
+  const currentYear = new Date().getFullYear();
+  const lastTwoDigits = currentYear.toString().slice(-2);
+  const sequenceNumber = count === 0 ? 14 : count + 1;
+  return prefix + sequenceNumber + `/${lastTwoDigits}`;
+};
 
 module.exports = router;

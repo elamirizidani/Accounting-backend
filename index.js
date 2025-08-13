@@ -21,9 +21,13 @@ app.use(express.json());
 app.use(morgan('dev'));
 
 // Routes
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/user', require('./routes/User'));
+
 app.use('/api/quotations', require('./routes/quotationRoutes'));
 app.use('/api/customers', require('./routes/customerRoutes'));
 app.use('/api/companies', require('./routes/companyRoutes'));
+
 app.use('/api/services', require('./routes/service'));
 app.use('/api/quotation', require('./routes/Quotation'));
 app.use('/api/invoice', require('./routes/invoice'));
