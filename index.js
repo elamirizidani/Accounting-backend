@@ -22,7 +22,7 @@ app.use(morgan('dev'));
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
-app.use('/api/user', require('./routes/User'));
+app.use('/api/user', require('./routes/user'));
 
 app.use('/api/quotations', require('./routes/quotationRoutes'));
 app.use('/api/customers', require('./routes/customerRoutes'));
