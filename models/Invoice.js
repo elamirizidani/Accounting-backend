@@ -19,6 +19,7 @@ const invoiceSchema = new mongoose.Schema({
   paymentMethod: String,
   totalAmount:String,
   notes: String,
+  extraEmail: {type: String,default:null},
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });

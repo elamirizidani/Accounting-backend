@@ -15,7 +15,6 @@ const generateQuotationId = async (prefix = 'P-', length = 2) => {
 
 router.post('/', async (req, res) => {
   try {
-    const count = await Quotation.countDocuments();
     req.body.quotationId = await generateQuotationId();
     // console.log(req.body)
     const quotation = new Quotation(req.body);
