@@ -15,9 +15,9 @@ router.get('/', async (req, res) => {
 
 router.post('/',async (req,res)=>{
     try {
-        const {service,description} = req.body
+        const {service,description,code} = req.body
         const serv = new Service({
-            service,description
+            service,description,code
         })
         await serv.save();
         res.status(201).json(serv);
