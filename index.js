@@ -35,7 +35,7 @@ app.use('/api/invoice', require('./routes/invoice'));
 // Error handling middleware
 app.use(require('./middlewares/errorHandler'));
 
-console.log(process.env.PORT)
+// console.log(process.env.PORT)
 const PORT = process.env.PORT || 5001;
 
 app.listen(PORT, () => {
