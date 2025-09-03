@@ -29,7 +29,7 @@ const quotationSchema = new mongoose.Schema({
   currency: { 
     type: String, 
     enum: ['USD', 'EUR', 'RWF'], 
-    default: 'USD' 
+    default: 'RWF' 
   },
   quotationDate: { type: Date, default: Date.now },
   dueDate: { type: Date },
