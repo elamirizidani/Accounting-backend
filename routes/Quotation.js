@@ -4,11 +4,11 @@ const Quotation = require('../models/Quotation');
 const mongoose = require('mongoose');
 
 
-const generateQuotationId = async (prefix = 'P-', length = 2) => {
+const generateQuotationId = async (prefix = 'P-#', length = 2) => {
   const count = await Quotation.countDocuments();
   const currentYear = new Date().getFullYear();
   const lastTwoDigits = currentYear.toString().slice(-2);
-  const sequenceNumber = count === 0 ? 14 : count + 1;
+  const sequenceNumber = count === 0 ? 43 : count + 1;
   return prefix + sequenceNumber + `/${lastTwoDigits}`;
 };
 
@@ -39,7 +39,8 @@ router.get('/', async (req, res) => {
     const quotations = await Quotation.find(filter)
       .populate('billedBy')
       .populate('billedTo')
-      .populate('items.service');
+      .populate('items.service')
+      .populate('items.code');
       
     res.send(quotations);
   } catch (error) {
@@ -57,7 +58,8 @@ router.get('/:id', async (req, res) => {
     const quotation = await Quotation.findById(req.params.id)
       .populate('billedBy')
       .populate('billedTo')
-      .populate('items.service');
+      .populate('items.service')
+      .populate('items.service.code');
       
     if (!quotation) {
       return res.status(404).send({ error: 'Quotation not found' });

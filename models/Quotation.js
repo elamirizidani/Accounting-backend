@@ -11,6 +11,11 @@ const itemSchema = new mongoose.Schema({
   unitCost: { type: Number, required: true },
   vat: { type: Number, default: 0 },
   total: { type: Number, required: true },
+  code:{ 
+      type:  mongoose.Schema.Types.ObjectId, 
+      ref:'ServiceCode',
+      required: true
+     },
 });
 
 const quotationSchema = new mongoose.Schema({

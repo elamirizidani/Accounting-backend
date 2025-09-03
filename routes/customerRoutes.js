@@ -4,5 +4,7 @@ const customerController = require('../controllers/customerController');
 
 router.get('/', customerController.getCustomers);
 router.post('/', customerController.createCustomer);
+router.get('/withDetails', customerController.getCustomersDetails);
+router.get('/summary', customerController.getSummary);
 
 module.exports = router;

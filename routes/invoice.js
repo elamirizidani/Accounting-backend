@@ -68,7 +68,7 @@ if (quotation) {
 
 
     const invoiceCount = await Invoice.countDocuments();
-    const invoiceNumber = `INV-${(invoiceCount + 1).toString().padStart(4, '0')}`;
+    const invoiceNumber = `INV-#${(invoiceCount + 1).toString().padStart(4, '0')}`;
 
 
     const invoice = new Invoice({
@@ -99,7 +99,7 @@ if (quotation) {
           { path: 'items.service'}
         ]
       });
-    sendConfirmationEmail(populatedInvoice)
+    // sendConfirmationEmail(populatedInvoice)
     res.status(201).json(populatedInvoice);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -135,7 +135,7 @@ router.get('/', async (req, res) => {
     }
 
     // Aggregate counts for current month and previous month
-    const [currentMonthCounts, previousMonthCounts] = await Promise.all([
+    const [currentMonthCounts, previousMonthCounts,totalAmounts, paidAmounts] = await Promise.all([
       // Current month aggregation
       Invoice.aggregate([
         {
@@ -160,7 +160,7 @@ router.get('/', async (req, res) => {
             count: 1,
             _id: 0
           }
-        }
+        },
       ]),
       
       // Previous month aggregation
@@ -186,6 +186,36 @@ router.get('/', async (req, res) => {
             status: "$_id",
             count: 1,
             _id: 0
+          }
+        }
+      ]),
+
+
+      Invoice.aggregate([
+        {
+          $match: {
+            status: { $ne: "draft" }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            totalAmount: { $sum: "$totalAmount" }
+          }
+        }
+      ]),
+
+      // Total amount of paid invoices
+      Invoice.aggregate([
+        {
+          $match: {
+            status: "paid"
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            totalAmount: { $sum: "$totalAmount" }
           }
         }
       ])
@@ -243,13 +273,18 @@ router.get('/', async (req, res) => {
     statusCounts.forEach(item => {
       counts[item.status] = item.count;
     });
+    
+    const totalAmountExceptDraft = totalAmounts.length > 0 ? totalAmounts[0].totalAmount : 0;
+    const totalPaidAmount = paidAmounts.length > 0 ? paidAmounts[0].totalAmount : 0;
 
     res.status(200).json({
       invoices,
       statusCounts: counts,
       monthlyStatusChanges: statusChanges,
       currentMonthCounts: currentCounts,
-      previousMonthCounts: previousCounts
+      previousMonthCounts: previousCounts,
+      totalAmountExceptDraft,
+      totalPaidAmount
     });
 
   } catch (error) {
