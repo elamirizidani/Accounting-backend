@@ -4,12 +4,50 @@ const Quotation = require('../models/Quotation');
 const mongoose = require('mongoose');
 
 
-const generateQuotationId = async (prefix = 'P-#', length = 2) => {
-  const count = await Quotation.countDocuments();
+// const generateQuotationId = async (prefix = 'P-#', length = 2) => {
+//   const count = await Quotation.countDocuments();
+//   const currentYear = new Date().getFullYear();
+//   const lastTwoDigits = currentYear.toString().slice(-2);
+//   const sequenceNumber = count === 0 ? 43 : count + 1;
+//   return prefix + sequenceNumber + `/${lastTwoDigits}`;
+// };
+
+
+const generateQuotationId = async (prefix = 'P-#') => {
   const currentYear = new Date().getFullYear();
   const lastTwoDigits = currentYear.toString().slice(-2);
-  const sequenceNumber = count === 0 ? 43 : count + 1;
-  return prefix + sequenceNumber + `/${lastTwoDigits}`;
+  
+  // Find the most recent quotation to check the year
+  const lastQuotation = await Quotation.findOne()
+    .sort({ createdAt: -1 })
+    .select('quotationId createdAt');
+  
+  let sequenceNumber;
+  
+  if (!lastQuotation) {
+    // First quotation ever - start from 43
+    sequenceNumber = 43;
+  } else {
+    // Extract year from the last quotation's ID or creation date
+    const lastQuotationYear = lastQuotation.createdAt 
+      ? new Date(lastQuotation.createdAt).getFullYear()
+      : parseInt(lastQuotation.quotationId.split('/')[1]) + 2000;
+    
+    if (lastQuotationYear < currentYear) {
+      // New year - reset to 1
+      sequenceNumber = 1;
+    } else {
+      // Same year - increment from the last number
+      const match = lastQuotation.quotationId.match(new RegExp(`^${prefix}(\\d+)/`));
+      if (match && match[1]) {
+        sequenceNumber = parseInt(match[1]) + 1;
+      } else {
+        sequenceNumber = 43; // Fallback
+      }
+    }
+  }
+  
+  return `${prefix}${sequenceNumber}/${lastTwoDigits}`;
 };
 
 
