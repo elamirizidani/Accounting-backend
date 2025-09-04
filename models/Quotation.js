@@ -58,14 +58,14 @@ const quotationSchema = new mongoose.Schema({
 });
 
 // Calculate totals before saving
-quotationSchema.pre('save', function(next) {
-  this.items.forEach(item => {
-    item.total = item.quantity * item.unitCost;
-    if (this.enableTax) {
-      item.total += item.total * (item.vat / 100);
-    }
-  });
-  next();
-});
+// quotationSchema.pre('save', function(next) {
+//   this.items.forEach(item => {
+//     item.total = item.quantity * item.unitCost;
+//     if (this.enableTax) {
+//       item.total += item.total * (item.vat / 100);
+//     }
+//   });
+//   next();
+// });
 
 module.exports = mongoose.model('Quotation', quotationSchema);
