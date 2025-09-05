@@ -27,7 +27,7 @@ router.post('/',async (req,res)=>{
       paymentMethod='',
       notes,
       extraEmail,
-      invoiceStatus = 'unpaid'
+      invoiceStatus
          } = req.body;
 let quotationData;
 
@@ -56,7 +56,9 @@ if (quotation) {
         // Populate the references
         quotationData = await Quotation.findById(quotationData._id)
           .populate('billedTo')
-          .populate('billedBy');
+          .populate('billedBy')
+          .populate('item.service')
+          .populate('item.code');
 
       } catch (quotationError) {
         return res.status(400).json({ 
@@ -96,7 +98,8 @@ if (quotation) {
         populate: [
           { path: 'billedTo' },
           { path: 'billedBy' },
-          { path: 'items.service'}
+          { path: 'items.service'},
+          { path: 'items.code'}
         ]
       });
     // sendConfirmationEmail(populatedInvoice)
@@ -118,6 +121,7 @@ router.get('/', async (req, res) => {
           { path: 'billedTo' },
           { path: 'billedBy' },
           { path: 'items.service' },
+          { path: 'items.code' }
         ]
       });
 
@@ -190,36 +194,74 @@ router.get('/', async (req, res) => {
         }
       ]),
 
-
-      Invoice.aggregate([
+Invoice.aggregate([
         {
           $match: {
-            status: { $ne: "draft" }
+            status: { $ne: "draft" },
+            totalAmount: { $exists: true, $ne: null, $ne: "" }
+          }
+        },
+        {
+          $addFields: {
+            totalAmountNum: {
+              $cond: {
+                if: { $eq: [{ $type: "$totalAmount" }, "string"] },
+                then: { $toDouble: "$totalAmount" },
+                else: "$totalAmount"
+              }
+            }
+          }
+        },
+        {
+          $match: {
+            totalAmountNum: { $ne: null, $gte: 0 }  // Filter out invalid conversions
           }
         },
         {
           $group: {
             _id: null,
-            totalAmount: { $sum: "$totalAmount" }
+            totalAmount: { $sum: "$totalAmountNum" },
+            count: { $sum: 1 }
           }
         }
       ]),
 
-      // Total amount of paid invoices
+      // Fixed: Total amount of paid invoices (convert string to number)
       Invoice.aggregate([
         {
           $match: {
-            status: "paid"
+            status: "paid",
+            totalAmount: { $exists: true, $ne: null, $ne: "" }
+          }
+        },
+        {
+          $addFields: {
+            totalAmountNum: {
+              $cond: {
+                if: { $eq: [{ $type: "$totalAmount" }, "string"] },
+                then: { $toDouble: "$totalAmount" },
+                else: "$totalAmount"
+              }
+            }
+          }
+        },
+        {
+          $match: {
+            totalAmountNum: { $ne: null, $gte: 0 }  // Filter out invalid conversions
           }
         },
         {
           $group: {
             _id: null,
-            totalAmount: { $sum: "$totalAmount" }
+            totalAmount: { $sum: "$totalAmountNum" },
+            count: { $sum: 1 }
           }
         }
       ])
     ]);
+
+    console.log('Total amounts aggregation result:', totalAmounts);
+    console.log('Paid amounts aggregation result:', paidAmounts);
 
     // Convert arrays to objects for easier access
     const currentCounts = {};

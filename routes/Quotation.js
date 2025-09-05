@@ -74,7 +74,7 @@ router.get('/', async (req, res) => {
     if (billedTo) filter.billedTo = billedTo;
     if (billedBy) filter.billedBy = billedBy;
     
-    const quotations = await Quotation.find(filter)
+    const quotations = await Quotation.find(filter).sort({ createdAt: -1 })
       .populate('billedBy')
       .populate('billedTo')
       .populate('items.service')
